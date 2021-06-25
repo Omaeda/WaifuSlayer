@@ -127,3 +127,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Bot session
+*.session
+
+# Text editor files
+.vscode/
+.idea/
+
+# pipenv files
+Pipfile
+Pipfile.lock
+
+# image files
+resources/
