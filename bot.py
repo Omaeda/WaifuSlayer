@@ -29,13 +29,13 @@ data = {
 }
 
 
-@bot.on(events.NewMessage(pattern=r"^a ?(.*)?", outgoing=True))
+@bot.on(events.NewMessage(pattern=r"^cazar ?(.*)?", outgoing=True))
 async def _(event):
     args = event.pattern_match.group(1)
     if args:
-        if args == "on":
+        if args == "si":
             data["activated"] = True
-        if args == "off":
+        if args == "no":
             data["activated"] = False
     if event.is_reply:
         reply = await event.get_reply_message()
