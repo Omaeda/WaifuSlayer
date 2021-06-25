@@ -50,6 +50,8 @@ async def _(event):
 async def _(event):
     if not data["activated"]:
         return
+    if not event.message.from_id.user_id:
+        return
     if not event.message.from_id.user_id == data["bot_id"]:
         return
     if not event.chat_id == data["chat_id"]:
@@ -74,7 +76,8 @@ async def _(event):
     div = xx.find_all("div", {"class": "r5a77d"})[0]
     alls = div.find("a")
     text = alls.text
-    await bot.send_message(event.chat_id, f"/{capture_text} {text}")
+    for name in text.split():
+        await bot.send_message(event.chat_id, f"/{capture_text} {name}")
 
 
 with bot:
