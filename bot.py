@@ -1,5 +1,5 @@
 import logging
-
+from telethon.tl.types import PeerUser
 import requests
 from bs4 import BeautifulSoup as bs
 from decouple import config
@@ -50,15 +50,15 @@ async def _(event):
 async def _(event):
     if not data["activated"]:
         return
-    if not event.message.from_id.user_id:
-        return
-    if not event.message.from_id.user_id == data["bot_id"]:
-        return
-    if not event.chat_id == data["chat_id"]:
-        return
     if not event.media:
         return
     if not data["message_text"] == event.text:
+        return
+    if not event.chat_id == data["chat_id"]:
+        return
+    if not isinstance(event.message.from_id, PeerUser):
+        return
+    if not event.message.from_id.user_id == data["bot_id"]:
         return
     dl = await bot.download_media(event.media, "resources/")
     file = {"encoded_image": (dl, open(dl, "rb"))}
