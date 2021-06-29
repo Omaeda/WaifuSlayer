@@ -76,7 +76,7 @@ async def _(event):
     for xoxxo in resultados:
         name = xoxxo.raw.get("data").get("characters")
         if name:
-            await bot.send_message(event.chat_id, f"/{capture_text} {name}")
+            return await bot.send_message(event.chat_id, f"/{capture_text} {name}")
         # return print(xoxxo.raw["data"]["characters"])
         # if "characters" in xoxxo.raw.keys():
         #     return print(xoxxo.raw["characters"])
