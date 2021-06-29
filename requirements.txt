@@ -2,3 +2,4 @@ python-decouple
 telethon
 requests
 beautifulsoup4
+saucenao-api

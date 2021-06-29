@@ -1,10 +1,14 @@
 import logging
-from telethon.tl.types import PeerUser
+import shutil
+import os
+import json
 import requests
 from bs4 import BeautifulSoup as bs
 from decouple import config
+from saucenao_api import SauceNao
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
+from telethon.tl.types import PeerUser
 
 logging.basicConfig(
     format='%(filename)s:%(lineno)s - %(levelname)s: %(message)s', level=logging.INFO)
@@ -16,10 +20,13 @@ try:
     api_hash = config("API_HASH")
     string_session = config("STRING_SESSION")
     capture_text = config("CAPTURE_TEXT")
+    sauce_api = config("SAUCENAO_API")
     bot = TelegramClient(StringSession(string_session), api_id, api_hash)
 except:
     print("Faltan las variables de entorno")
     exit()
+
+sauce = SauceNao(sauce_api)
 
 data = {
     "chat_id": False,
@@ -61,23 +68,40 @@ async def _(event):
     if not event.message.from_id.user_id == data["bot_id"]:
         return
     dl = await bot.download_media(event.media, "resources/")
-    file = {"encoded_image": (dl, open(dl, "rb"))}
-    grs = requests.post(
-        "https://www.google.com/searchbyimage/upload", files=file, allow_redirects=False
-    )
-    loc = grs.headers.get("Location")
-    response = requests.get(
-        loc,
-        headers={
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0"
-        },
-    )
-    xx = bs(response.text, "html.parser")
-    div = xx.find_all("div", {"class": "r5a77d"})[0]
-    alls = div.find("a")
-    text = alls.text
-    for name in text.split():
-        await bot.send_message(event.chat_id, f"/{capture_text} {name}")
+    with open(dl, "rb") as file:
+        resultados = sauce.from_file(file)
+    if not resultados:
+        return logging.info("No se encontraron resultados")
+    # print(len(resultados))
+    for xoxxo in resultados:
+        name = xoxxo.raw.get("data").get("characters")
+        if name:
+            await bot.send_message(event.chat_id, f"/{capture_text} {name}")
+        # return print(xoxxo.raw["data"]["characters"])
+        # if "characters" in xoxxo.raw.keys():
+        #     return print(xoxxo.raw["characters"])
+    # file = {"encoded_image": (dl, open(dl, "rb"))}
+    # grs = requests.post(
+    #     "https://www.google.com/searchbyimage/upload", files=file, allow_redirects=False
+    # )
+    # loc = grs.headers.get("Location")
+    # response = requests.get(
+    #     loc,
+    #     headers={
+    #         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0"
+    #     },
+    # )
+    # xx = bs(response.text, "html.parser")
+    # div = xx.find_all("div", {"class": "r5a77d"})[0]
+    # alls = div.find("a")
+    # text = alls.text
+    # for name in text.split():
+    #     await bot.send_message(event.chat_id, f"/{capture_text} {name}")
+    try:
+        shutil.rmtree(f"{os.getcwd()}/resources")
+    except:
+        logging.exception("Error al remover el archivo descargado")
+        pass
 
 
 with bot:
