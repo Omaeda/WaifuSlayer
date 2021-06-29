@@ -1,7 +1,7 @@
 import logging
-import shutil
 import os
-import json
+import shutil
+
 import requests
 from bs4 import BeautifulSoup as bs
 from decouple import config
@@ -13,7 +13,7 @@ from telethon.tl.types import PeerUser
 logging.basicConfig(
     format='%(filename)s:%(lineno)s - %(levelname)s: %(message)s', level=logging.INFO)
 
-print("Iniciando...")
+logging.info("Iniciando...")
 
 try:
     api_id = config("API_ID", cast=int)
@@ -23,7 +23,7 @@ try:
     sauce_api = config("SAUCENAO_API")
     bot = TelegramClient(StringSession(string_session), api_id, api_hash)
 except:
-    print("Faltan las variables de entorno")
+    logging.error("Faltan las variables de entorno")
     exit()
 
 sauce = SauceNao(sauce_api)
@@ -32,7 +32,8 @@ data = {
     "chat_id": False,
     "bot_id": False,
     "message_text": False,
-    "activated": False
+    "activated": False,
+    "method": "saucenao"
 }
 
 
@@ -44,13 +45,15 @@ async def _(event):
             data["activated"] = True
         if args == "no":
             data["activated"] = False
+        if args in ("google", "saucenao"):
+            data["method"] = args
     if event.is_reply:
         reply = await event.get_reply_message()
         data["chat_id"] = event.chat_id
         data["bot_id"] = reply.from_id.user_id
         data["message_text"] = reply.text
         data["activated"] = True
-    print("Activo:", data["activated"], "\nChat ID:", data["chat_id"], "\nBot ID:", data["bot_id"])
+    logging.info(f'Activo: {data["activated"]}\nChat ID: {data["chat_id"]}\nBot ID: {data["bot_id"]}')
 
 
 @bot.on(events.NewMessage(incoming=True))
@@ -68,35 +71,37 @@ async def _(event):
     if not event.message.from_id.user_id == data["bot_id"]:
         return
     dl = await bot.download_media(event.media, "resources/")
-    with open(dl, "rb") as file:
-        resultados = sauce.from_file(file)
-    if not resultados:
-        return logging.info("No se encontraron resultados")
-    # print(len(resultados))
-    for xoxxo in resultados:
-        name = xoxxo.raw.get("data").get("characters")
-        if name:
-            return await bot.send_message(event.chat_id, f"/{capture_text} {name}")
-        # return print(xoxxo.raw["data"]["characters"])
-        # if "characters" in xoxxo.raw.keys():
-        #     return print(xoxxo.raw["characters"])
-    # file = {"encoded_image": (dl, open(dl, "rb"))}
-    # grs = requests.post(
-    #     "https://www.google.com/searchbyimage/upload", files=file, allow_redirects=False
-    # )
-    # loc = grs.headers.get("Location")
-    # response = requests.get(
-    #     loc,
-    #     headers={
-    #         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0"
-    #     },
-    # )
-    # xx = bs(response.text, "html.parser")
-    # div = xx.find_all("div", {"class": "r5a77d"})[0]
-    # alls = div.find("a")
-    # text = alls.text
-    # for name in text.split():
-    #     await bot.send_message(event.chat_id, f"/{capture_text} {name}")
+
+    if data["method"] == "google":
+        file = {"encoded_image": (dl, open(dl, "rb"))}
+        grs = requests.post(
+            "https://www.google.com/searchbyimage/upload", files=file, allow_redirects=False
+        )
+        loc = grs.headers.get("Location")
+        response = requests.get(
+            loc,
+            headers={
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0"
+            },
+        )
+        xx = bs(response.text, "html.parser")
+        div = xx.find_all("div", {"class": "r5a77d"})[0]
+        alls = div.find("a")
+        text = alls.text
+        for name in text.split():
+            await bot.send_message(event.chat_id, f"/{capture_text} {name}")
+    else:
+        with open(dl, "rb") as file:
+            resultados = sauce.from_file(file)
+        if not resultados:
+            return logging.info("No se encontraron resultados")
+        # print(len(resultados))
+        for xoxxo in resultados:
+            name = xoxxo.raw.get("data").get("characters")
+            if name:
+                return await bot.send_message(event.chat_id, f"/{capture_text} {name}")
+            # return print(xoxxo.raw["data"]["characters"])
+
     try:
         shutil.rmtree(f"{os.getcwd()}/resources")
     except:
@@ -105,5 +110,5 @@ async def _(event):
 
 
 with bot:
-    print("Bot iniciado correctamente")
+    logging.info("Bot iniciado correctamente")
     bot.run_until_disconnected()
