@@ -118,7 +118,11 @@ async def _(event):
         if text:
             text = text.split()[0]
             name.append(text)
-
+    
+    if name == []:
+        logging.info("No se encontro el nombre")
+        return
+    
     # comprobar que no fue atrapada y atrapar
     if not added:
         end = time.perf_counter()
